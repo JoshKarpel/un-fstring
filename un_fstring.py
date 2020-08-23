@@ -13,7 +13,7 @@ from tokenize_rt import Offset, Token, src_to_tokens, tokens_to_src
 
 class FindFStrings(ast.NodeVisitor):
     def __init__(self) -> None:
-        self.fstrings = {}  # type: Dict[Offset, ast.JoinedStr]
+        self.fstrings: Dict[Offset, ast.JoinedStr] = {}
 
     def visit_JoinedStr(self, node: ast.JoinedStr) -> None:
         offset = Offset(node.lineno, node.col_offset)
