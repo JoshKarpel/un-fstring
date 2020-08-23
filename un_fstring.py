@@ -10,13 +10,13 @@ from typing import Callable, Dict, Iterable, Iterator, List, Optional, Tuple, ca
 from tokenize_rt import Offset, Token, src_to_tokens, tokens_to_src
 
 
-class FindJoinedStrings(ast.NodeVisitor):
+class FindFStrings(ast.NodeVisitor):
     def __init__(self) -> None:
-        self.joined_strings: Dict[Offset, ast.JoinedStr] = {}
+        self.fstrings: Dict[Offset, ast.JoinedStr] = {}
 
     def visit_JoinedStr(self, node: ast.JoinedStr) -> None:
         offset = Offset(node.lineno, node.col_offset)
-        self.joined_strings[offset] = node
+        self.fstrings[offset] = node
 
         self.generic_visit(node)
 
@@ -24,14 +24,14 @@ class FindJoinedStrings(ast.NodeVisitor):
 def convert_f_strings_to_strings_format(src: str) -> str:
     ast_ = ast.parse(src)
 
-    visitor = FindJoinedStrings()
+    visitor = FindFStrings()
     visitor.visit(ast_)
 
     tokens = src_to_tokens(src)
 
     for idx, token in enumerate(tokens):
-        if token.offset in visitor.joined_strings and token.src.startswith("f"):
-            s, args = parse_f_string(visitor.joined_strings[token.offset])
+        if token.offset in visitor.fstrings and token.src.startswith("f"):
+            s, args = parse_f_string(visitor.fstrings[token.offset])
             tokens[idx] = Token(
                 name=token.name,
                 src='"{}".format({})'.format(s, ", ".join(args)),
@@ -47,7 +47,7 @@ def parse_f_string(node: ast.JoinedStr) -> Tuple[str, List[str]]:
     args = []
 
     for part in node.values:
-        if isinstance(part, ast.Constant):
+        if isinstance(part, ast.Str):
             s.append(part.value)
         elif isinstance(part, ast.FormattedValue):
             s.append("{}")
