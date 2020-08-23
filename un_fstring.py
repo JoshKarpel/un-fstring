@@ -5,8 +5,9 @@ import ast
 import difflib
 import sys
 from pathlib import Path
-from typing import Callable, Dict, Iterable, Iterator, List, Optional, Tuple, cast
+from typing import Callable, Dict, Iterable, Iterator, List, Optional
 
+import astroid
 from tokenize_rt import Offset, Token, src_to_tokens, tokens_to_src
 
 
@@ -31,10 +32,9 @@ def convert_f_strings_to_strings_format(src: str) -> str:
 
     for idx, token in enumerate(tokens):
         if token.offset in visitor.fstrings and token.src.startswith("f"):
-            s, args = parse_f_string(visitor.fstrings[token.offset])
             tokens[idx] = Token(
                 name=token.name,
-                src='"{}".format({})'.format(s, ", ".join(args)),
+                src=convert_f_string_to_format_string(token.src),
                 line=token.line,
                 utf8_byte_offset=token.utf8_byte_offset,
             )
@@ -42,21 +42,45 @@ def convert_f_strings_to_strings_format(src: str) -> str:
     return tokens_to_src(tokens)
 
 
-def parse_f_string(node: ast.JoinedStr) -> Tuple[str, List[str]]:
-    s = []
-    args = []
+CONVERSIONS = {-1: "", 115: "!s", 114: "!r", 97: "!a"}
 
-    for part in node.values:
-        if isinstance(part, ast.Str):
-            s.append(part.value)
-        elif isinstance(part, ast.FormattedValue):
-            s.append("{}")
 
-            # the value of the FormattedValue node is always a Name
-            name = cast(ast.Name, part.value)
-            args.append(name.id)
+def convert_f_string_to_format_string(src: str) -> str:
+    node = astroid.extract_node(src)
 
-    return "".join(s), args
+    # An f-string alternates between two kinds of nodes: string Const nodes and
+    # FormattedValue nodes that hold the formatting bits
+    format_string_parts = []
+    format_args = []
+    for child in node.get_children():
+        if isinstance(child, astroid.Const):
+            format_string_parts.append(child.value)
+        elif isinstance(child, astroid.FormattedValue):
+            format_string_parts.append(
+                "{{{c}{f}}}".format(
+                    c=CONVERSIONS[child.conversion],
+                    f=":" + child.format_spec.values[0].value
+                    if child.format_spec is not None
+                    else "",
+                )
+            )
+            # We can pick the format value nodes right out of the string
+            # and place them in the args; no need to introspect what they
+            # actually are!
+            format_args.append(child.value)
+
+    format_string_node = astroid.Const("".join(format_string_parts))
+
+    format_call = astroid.Call(lineno=node.lineno, col_offset=node.col_offset)
+
+    # The Call's func is a method looked up on the format string
+    format_attr = astroid.Attribute(attrname="format", lineno=node.lineno, parent=format_call)
+    format_attr.postinit(expr=format_string_node)
+
+    # The Call's arguments are the format arguments extracted from the f-string
+    format_call.postinit(func=format_attr, args=format_args, keywords=[])
+
+    return format_call.as_string()
 
 
 def fix_file(file: Path, conversions: List[Callable[[str], str]], dry_run: bool) -> bool:
