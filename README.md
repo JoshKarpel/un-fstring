@@ -1,9 +1,6 @@
 # un-fstring
 
-![PyPI](https://img.shields.io/pypi/v/un-fstring)
-
-![tests](https://github.com/JoshKarpel/un-fstring/workflows/tests/badge.svg)
-![PyPI - License](https://img.shields.io/pypi/l/un-fstring)
+[![PyPI version](https://badge.fury.io/py/un-fstring.svg)](https://badge.fury.io/py/un-fstring)
 
 Sometimes, unfortunately, you need to write code that is compatible with Python 3.5
 (e.g., to run on Ubuntu 16 or Debian 9, which will be supported
