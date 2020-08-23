@@ -1,0 +1,22 @@
+name: publish-to-pypi
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.x
+      uses: actions/setup-python@v2
+      with:
+        python-version: "3.x"
+    - name: Build packages
+      run: python setup.py sdist bdist_wheel
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@v1.3.1
+      with:
+        user: __token__
+        password: ${{ secrets.pypi_token }}
