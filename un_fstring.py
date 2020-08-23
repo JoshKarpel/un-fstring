@@ -122,9 +122,12 @@ def convert_file(file: Path, conversions: List[Callable[[str], str]], dry_run: b
     was_modified = src != mod
 
     if was_modified and not dry_run:
-        file.write_text(mod)
+        # Atomic overwrite
+        tmp_file = file.with_name(file.name + ".tmp")
+        tmp_file.write_text(mod)
+        tmp_file.rename(file)
+
         print("Modified {}".format(file))
-        print(diff(src, mod, file))
     elif was_modified and dry_run:
         print(diff(src, mod, file))
 
