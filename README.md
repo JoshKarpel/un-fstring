@@ -10,9 +10,10 @@ Sometimes, unfortunately, you need to write code that is compatible with Python 
 until April 2021 and June 2022, respectively).
 Sometimes, even more unfortunately, you didn't know it needed to be when you
 wrote it, and you need to make it compatible post-facto.
-The biggest syntax changes going from 3.5 to 3.6 was the addition of
-[f-strings](https://docs.python.org/3/whatsnew/3.6.html#pep-498-formatted-string-literals),
-and [many](https://github.com/asottile/pyupgrade)
+
+The biggest syntax change going from 3.5 to 3.6 was the addition of
+[f-strings](https://docs.python.org/3/whatsnew/3.6.html#pep-498-formatted-string-literals).
+[Many](https://github.com/asottile/pyupgrade)
 [packages](https://github.com/ikamensh/flynt)
 can convert old-style string formatting methods into f-strings.
 `un-fstring` does the opposite: it converts f-strings into `.format()` calls
@@ -40,7 +41,6 @@ Run `un-fstring --help` to see what other options are available.
   hooks:
     - id: un-fstring
 ```
-
 
 `un-fstring` is not a code formatter;
 I recommend running
