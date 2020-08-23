@@ -3,12 +3,15 @@
 import argparse
 import ast
 import difflib
+import os
 import sys
 from pathlib import Path
 from typing import Callable, Dict, Iterable, Iterator, List, Optional
 
 import astroid
 from tokenize_rt import Offset, Token, src_to_tokens, tokens_to_src
+
+WINDOWS = os.name == "nt"
 
 
 class FindFStrings(ast.NodeVisitor):
@@ -67,11 +70,12 @@ def convert_f_string_to_format_string(src: str) -> str:
             format_string_parts.append(
                 "{{{c}{f}}}".format(
                     c=CONVERSIONS[child.conversion],
-                    f=":" + child.format_spec.values[0].value
+                    f=f":{child.format_spec.values[0].value}"
                     if child.format_spec is not None
                     else "",
                 )
             )
+
             # We can pick the format value nodes right out of the string
             # and place them in the args; no need to introspect what they
             # actually are!
@@ -122,12 +126,15 @@ def convert_file(file: Path, conversions: List[Callable[[str], str]], dry_run: b
     was_modified = src != mod
 
     if was_modified and not dry_run:
-        # Atomic overwrite
-        tmp_file = file.with_name(file.name + ".tmp")
-        tmp_file.write_text(mod)
-        tmp_file.rename(file)
+        # Atomic overwrite on Linux
+        if WINDOWS:
+            file.write_text(mod)
+        else:
+            tmp_file = file.with_name(file.name + ".tmp")
+            tmp_file.write_text(mod)
+            tmp_file.rename(file)
 
-        print("Modified {}".format(file))
+        print(f"Modified {file}")
     elif was_modified and dry_run:
         print(diff(src, mod, file))
 
@@ -140,7 +147,7 @@ def diff(a: str, b: str, path: Path) -> str:
             a.splitlines(keepends=True),
             b.splitlines(keepends=True),
             fromfile=str(path),
-            tofile="un_fstring({})".format(path),
+            tofile=f"un-fstring({path})",
         )
     )
 
@@ -189,19 +196,15 @@ def cli() -> int:
     if any(modified):
         if args.dry_run:
             print(
-                "Checked {} files; would have modified {} file{} 😞".format(
-                    len(files), sum(modified), "s" if sum(modified) > 1 else ""
-                )
+                f"Checked {len(files)} files; would have modified {sum(modified)} file{'s' if sum(modified) > 1 else ''}"
             )
         else:
             print(
-                "Checked {} files; modified {} file{} 😞".format(
-                    len(files), sum(modified), "s" if sum(modified) > 1 else ""
-                )
+                f"Checked {len(files)} files; modified {sum(modified)} file{'s' if sum(modified) > 1 else ''}"
             )
         return 1
     else:
-        print("Checked {} files; didn't have to do anything!".format(len(files)))
+        print(f"Checked {len(files)} files; didn't have to do anything!")
         return 0
 
 
