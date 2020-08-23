@@ -32,6 +32,16 @@ The `--dry-run` option will show a contextual diff
 of what `un-fstring` would do to your code without actually overwriting it.
 Run `un-fstring --help` to see what other options are available.
 
+`un-fstring` is available as a
+[`pre-commit`](https://github.com/pre-commit/pre-commit) hook:
+```yaml
+- repo: https://github.com/JoshKarpel/un-fstring
+  rev: v0.1.2
+  hooks:
+    - id: un-fstring
+```
+
+
 `un-fstring` is not a code formatter;
 I recommend running
 [`black`](https://github.com/psf/black)

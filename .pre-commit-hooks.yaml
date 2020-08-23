@@ -1,0 +1,6 @@
+- id: un-fstring
+  name: un-fstring
+  description: Convert f-strings to .format() calls.
+  entry: un-fstring
+  language: python
+  types: [python]
