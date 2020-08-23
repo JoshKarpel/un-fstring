@@ -23,6 +23,10 @@ class FindFStrings(ast.NodeVisitor):
 
 
 def convert_f_strings_to_strings_format(src: str) -> str:
+    """
+    Convert all f-string in arbitrary source code to .format() calls,
+    returning the full modified source code.
+    """
     ast_ = ast.parse(src)
 
     visitor = FindFStrings()
@@ -46,6 +50,10 @@ CONVERSIONS = {-1: "", 115: "!s", 114: "!r", 97: "!a"}
 
 
 def convert_f_string_to_format_string(src: str) -> str:
+    """
+    Convert a single f-string (passed as its source token)
+    to a .format() call (as a source token).
+    """
     node = astroid.extract_node(src)
 
     # An f-string alternates between two kinds of nodes: string Const nodes and
@@ -83,7 +91,29 @@ def convert_f_string_to_format_string(src: str) -> str:
     return format_call.as_string()
 
 
-def fix_file(file: Path, conversions: List[Callable[[str], str]], dry_run: bool) -> bool:
+def convert_file(file: Path, conversions: List[Callable[[str], str]], dry_run: bool) -> bool:
+    """
+    Run a list of conversions over a file.
+    Each conversion takes in the file contents
+    (possibly modified by a prior conversion)
+    and emits a new version of the file contents.
+
+    Parameters
+    ----------
+    file
+        The file to convert.
+    conversions
+        The conversions to run.
+    dry_run
+        If ``False``, and the final file contents do not match the original,
+        the file will be overwritten with the converted contents.
+        If ``True``, instead print a diff showing how the file would change.
+
+    Returns
+    -------
+    was_modified : bool
+        ``True`` if the file was/would be modified.
+    """
     mod = src = file.read_text()
 
     for conversion in conversions:
@@ -121,10 +151,22 @@ def gather_files(paths: Iterable[Path]) -> Iterator[Path]:
 
 
 def parse_args(args: Optional[List[str]] = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description="Down-convert f-strings to .format() calls for compatibility with Python <3.6"
+    )
 
-    parser.add_argument("path", nargs="*", type=Path)
-    parser.add_argument("--dry-run", "-d", action="store_true")
+    parser.add_argument(
+        "path",
+        nargs="*",
+        type=Path,
+        help="paths to files (or directories of files, searched recursively) to down-convert f-strings in",
+    )
+    parser.add_argument(
+        "--dry-run",
+        "-d",
+        action="store_true",
+        help="if passed, do not overwrite files, and show a diff of what would be written instead",
+    )
 
     return parser.parse_args(args)
 
@@ -135,7 +177,9 @@ def cli() -> int:
     files = list(gather_files(args.path))
 
     modified = [
-        fix_file(file=file, conversions=[convert_f_strings_to_strings_format], dry_run=args.dry_run)
+        convert_file(
+            file=file, conversions=[convert_f_strings_to_strings_format], dry_run=args.dry_run
+        )
         for file in files
     ]
 
