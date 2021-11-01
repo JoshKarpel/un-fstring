@@ -19,11 +19,11 @@ repos:
       - id: check-case-conflict
       - id: forbid-new-submodules
   - repo: https://github.com/psf/black
-    rev: 21.9b0
+    rev: 21.10b0
     hooks:
       - id: black
   - repo: https://github.com/asottile/setup-cfg-fmt
-    rev: v1.18.0
+    rev: v1.19.0
     hooks:
       - id: setup-cfg-fmt
   - repo: https://github.com/asottile/seed-isort-config
