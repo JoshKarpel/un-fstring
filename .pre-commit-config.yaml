@@ -19,7 +19,7 @@ repos:
       - id: check-case-conflict
       - id: forbid-new-submodules
   - repo: https://github.com/psf/black
-    rev: 22.10.0
+    rev: 22.12.0
     hooks:
       - id: black
   - repo: https://github.com/asottile/setup-cfg-fmt
@@ -31,7 +31,7 @@ repos:
     hooks:
       - id: seed-isort-config
   - repo: https://github.com/PyCQA/isort
-    rev: 5.10.1
+    rev: 5.11.0
     hooks:
       - id: isort
   - repo: https://github.com/pre-commit/mirrors-mypy
